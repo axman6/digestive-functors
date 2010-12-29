@@ -116,6 +116,20 @@ instance (Monad m, Monoid v) => Applicative (Form m i e v) where
         put $ FormRange startF1 endF2
         return (v1 `mappend` v2, r1 <*> r2)
 
+instance (Monad m, Monoid v) => Monad (Form m i e v) where
+    -- return :: a -> Form m i e a
+    return  = pure
+    -- (>>=) :: Form m i e v s -> (a -> Form i e v b) -> Form i e v b
+    (Form fs) >>= f = Form $ do
+        (v,res) <- fs
+        case res of
+            Error ls -> return (v,Error ls)
+            Ok ok -> do
+                (v',res') <- unForm $ f ok
+                case res' of
+                    Error ls -> return (v `mappend` v', Error ls)
+                    Ok ok -> return (v `mappend` v', Ok ok)
+
 -- | Insert a view into the functor
 --
 view :: Monad m
